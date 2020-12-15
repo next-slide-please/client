@@ -1,34 +1,55 @@
-use iced::{button, Align, Button, Column, Element, Sandbox, Settings, Text};
+use iced::{button, executor, Align, Button, Column, Element, Sandbox, Settings, Text, Application, Subscription, Command};
+
+mod websocket;
+//mod foo;
 
 pub fn main() -> iced::Result {
     Counter::run(Settings::default())
 }
 
-#[derive(Default)]
+#[derive(Debug)]
+enum State {
+    Ready,
+    Connected,
+    Disconnected,
+}
+
+#[derive( Debug)]
 struct Counter {
     value: i32,
+    state: State,
     increment_button: button::State,
     decrement_button: button::State,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Message {
     IncrementPressed,
     DecrementPressed,
+    Websocket(websocket::Progress),
 }
 
-impl Sandbox for Counter {
+impl Application for Counter {
     type Message = Message;
+    type Flags = ();
+    type Executor = executor::Default;
 
-    fn new() -> Self {
-        Self::default()
+
+    fn new(_flags: ()) -> (Self, Command<Message>) {
+        (Counter {
+            value: 0,
+            state: State::Ready,
+            increment_button: Default::default(),
+            decrement_button: Default::default()
+        }, Command::none())
     }
 
     fn title(&self) -> String {
         String::from("Counter - Iced")
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> Command<Message> {
+        println!("got message {:?}", message);
         match message {
             Message::IncrementPressed => {
                 self.value += 1;
@@ -36,6 +57,17 @@ impl Sandbox for Counter {
             Message::DecrementPressed => {
                 self.value -= 1;
             }
+            _ => ()
+        }
+        Command::none()
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        println!("called subscription {:?}", self);
+        match self.state {
+            State::Ready =>
+                websocket::file("http://127.0.0.1:8000").map(Message::Websocket),
+            _ => Subscription::none()
         }
     }
 

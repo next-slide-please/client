@@ -1,7 +1,10 @@
 #[macro_use]
 extern crate log;
 extern crate reqwest;
+extern crate keybd_event;
 
+use keybd_event::KeyBondingInstance;
+use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
 use druid::{AppLauncher, Data, FontDescriptor, FontFamily, Lens, LocalizedString, UnitPoint, WidgetExt, WindowDesc};
 use druid::widget::{Align, Controller, Flex, Label, Button};
@@ -73,6 +76,12 @@ impl Controller<AppState, Align<AppState>> for AppController {
                     }
 
                     websocket::StateChange::EventReceived(event) => {
+                        let mut kb = KeyBondingInstance::new().unwrap();
+                        match event {
+                            websocket::Event::Previous => kb.add_keys(&[KeyLEFT]),
+                            websocket::Event::Next => kb.add_keys(&[KeyRIGHT]),
+                        }
+                        kb.launching();
                         debug!("event received {:?}", event);
                     }
                 }

@@ -3,8 +3,27 @@ name = "next-slide-please"
 version = "0.1.0"
 authors = ["lucas.jenss"]
 edition = "2018"
+description = "Lorem Ipsum"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package.metadata.bundle]
+name = "NextSlidePlease"
+identifier = "com.next-slide-please.client"
+icon = []
+version = "0.0.1"
+resources = []
+copyright = "Copyright (c) Jane Doe 2016. All rights reserved."
+category = "Developer Tool"
+short_description = "An example application."
+long_description = """
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+eiusmod tempor incididunt ut labore et dolore magna aliqua.  Ut
+enim ad minim veniam, quis nostrud exercitation ullamco laboris
+nisi ut aliquip ex ea commodo consequat.
+"""
+deb_depends = []
+osx_frameworks = []
 
 [dependencies]
 druid = { git = "https://github.com/linebender/druid.git" }

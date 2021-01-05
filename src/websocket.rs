@@ -20,7 +20,7 @@ pub enum StateChange {
     EventReceived(Event),
 }
 
-const BACKEND_REGISTER_ENDPOINT: &str = "http://next-slide-please.com:8000/register";
+const BACKEND_REGISTER_ENDPOINT: &str = "http://localhost:8000/register";
 pub(crate) const STATE_CHANGED: Selector<StateChange> = Selector::new("set-websocket-state");
 
 

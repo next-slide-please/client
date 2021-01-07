@@ -182,6 +182,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dotenv",
+ "druid",
+ "env_logger",
+ "keybd_event",
+ "log",
+ "reqwest",
+ "tungstenite",
+ "url",
+ "webbrowser",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -335,6 +351,12 @@ name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
+
+[[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
 name = "druid"
@@ -1259,20 +1281,6 @@ dependencies = [
  "cfg-if 0.1.10",
  "libc",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "next-slide-please"
-version = "0.1.0"
-dependencies = [
- "druid",
- "env_logger",
- "keybd_event",
- "log",
- "reqwest",
- "tungstenite",
- "url",
- "webbrowser",
 ]
 
 [[package]]

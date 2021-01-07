@@ -10,6 +10,7 @@ use druid::{AppLauncher, Data, FontDescriptor, FontFamily, Lens, LocalizedString
 use druid::widget::{Align, Controller, Flex, Label, Button};
 use druid::widget::prelude::*;
 use std::thread;
+use dotenv::dotenv;
 
 mod websocket;
 
@@ -30,6 +31,7 @@ const WINDOW_TITLE: LocalizedString<AppState> = LocalizedString::new("Next slide
 
 
 pub fn main() {
+    dotenv().ok();
     env_logger::init();
     info!("starting up");
 

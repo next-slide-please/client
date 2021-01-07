@@ -4,8 +4,10 @@ use tungstenite::{connect, WebSocket, Message};
 use reqwest::Url;
 use std::thread;
 use std::time::Duration;
-use std::error::Error;
 use tungstenite::client::AutoStream;
+use anyhow::{Context, Result};
+use std::fmt::Debug;
+
 
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -23,17 +25,26 @@ pub enum StateChange {
 const BACKEND_REGISTER_ENDPOINT: &str = "http://localhost:8000/register";
 pub(crate) const STATE_CHANGED: Selector<StateChange> = Selector::new("set-websocket-state");
 
+#[derive(Debug, Clone)]
+struct Session {
+    publish_url: String,
+    websocket_url: String,
+    secret: String,
+}
 
 pub struct WebSocketConnection {
     event_sink: druid::ExtEventSink,
     client: reqwest::blocking::Client,
+    session: Option<Session>
+
 }
 
 impl WebSocketConnection {
     pub fn new(event_sink: druid::ExtEventSink) -> Self {
         WebSocketConnection {
             event_sink,
-            client: reqwest::blocking::Client::new()
+            client: reqwest::blocking::Client::new(),
+            session: None,
         }
     }
 
@@ -45,7 +56,13 @@ impl WebSocketConnection {
         ).expect("Failed to send message to main thread");
     }
 
-    fn register(&self) -> Result<(String, String), Box<dyn Error>> {
+    fn register(&self) -> Result<Session, anyhow::Error> {
+        if self.session.is_some() {
+            let session = self.session.clone().unwrap();
+            debug!("Register called while session already exists: {:?}", &session);
+            return Ok(session)
+        }
+
         let res = self.client.post(BACKEND_REGISTER_ENDPOINT)
             .header("Content-Type", "application/json")
             .body("{}")
@@ -53,77 +70,72 @@ impl WebSocketConnection {
 
         let content = res.json::<HashMap<String, String>>()?;
         let publish_url = content.get("publish_url")
-            .ok_or("Response did not contain 'publish_url'")?
+            .context("Response did not contain 'publish_url'")?
             .to_owned();
         let websocket_url = content.get("websocket_url")
-            .ok_or("Response did not contain 'websocket_url'")?
+            .context("Response did not contain 'websocket_url'")?
             .to_owned();
 
-        debug!("Websocket URL: {:?}", websocket_url);
-        debug!("Publish URL: {:?}", publish_url);
+        let secret = content.get("secret")
+            .context("Response did not contain 'secret'")?
+            .to_owned();
 
-        Ok((publish_url, websocket_url))
+        trace!("Websocket URL: {:?}", websocket_url);
+        trace!("Publish URL: {:?}", publish_url);
+
+        Ok(Session {
+            publish_url,
+            websocket_url,
+            secret
+        })
     }
 
-    fn websocket_connect(&self, websocket_url: &String) -> Result<WebSocket<AutoStream>, Box<dyn Error>> {
+    fn websocket_connect(&self, websocket_url: &String) -> Result<WebSocket<AutoStream>, anyhow::Error> {
         let url = Url::parse(websocket_url)?;
         let (socket, response) = connect(url)?;
 
-        debug!("Connected to the server");
-        debug!("Response HTTP code: {}", response.status());
-        debug!("Response contains the following headers:");
+        trace!("Connected to the server");
+        trace!("Response HTTP code: {}", response.status());
+        trace!("Response contains the following headers:");
         for (ref header, _value) in response.headers() {
-            debug!("* {}", header);
+            trace!("* {}", header);
         }
 
         Ok(socket)
     }
 
-    fn connect(&mut self) {
+    fn connect(&mut self) -> Result<(), anyhow::Error> {
         self.submit_command(StateChange::Connecting);
 
-        let (publish_url, websocket_url) = match self.register() {
-            Err(e) => {
-                error!("Failed to register new connection: {}", e);
-                return;
-            }
-            Ok((publish_url, websocket_url)) => (publish_url, websocket_url)
-        };
+        let session = self.register()
+            .context("Failed to register new connection")?;
 
-        let mut socket = match self.websocket_connect(&websocket_url) {
-            Err(e) => {
-                error!("Failed to establish websocket connection: {}", e);
-                return;
-            }
-            Ok(socket) => socket
-        };
+        let mut socket = self.websocket_connect(&session.websocket_url)
+            .context("Failed to establish websocket connection")?;
 
         self.submit_command(StateChange::Connected {
-            publish_url: publish_url.to_owned(),
-            websocket_url: websocket_url.to_owned()
+            publish_url: session.publish_url.to_owned(),
+            websocket_url: session.websocket_url.to_owned()
         });
-
-
 
         //socket.write_message(Message::Text("Hello WebSocket".into())).unwrap();
         loop {
-            match socket.read_message() {
-                Err(e) => {
-                    debug!("Error reading from websocket {:?}", e);
-                    break;
-                }
-                Ok(Message::Text(msg)) if msg == "next" => {
+            let message = socket.read_message()
+                .context("Error reading from websocket")?;
+
+            match message {
+                Message::Text(msg) if msg == "next" => {
                     debug!("'Next' received!");
                     self.submit_command(StateChange::EventReceived(Event::Next));
                 }
 
-                Ok(Message::Text(msg)) if msg == "prev" => {
+                Message::Text(msg) if msg == "prev" => {
                     debug!("'Previous' received!");
                     self.submit_command(StateChange::EventReceived(Event::Previous));
 
                 }
 
-                Ok(msg) => {
+                msg => {
                     debug!("Received unexpected message: {}", msg)
                 }
             }
@@ -134,7 +146,10 @@ impl WebSocketConnection {
     pub fn connect_loop(&mut self) {
         loop {
             info!("Trying to establish websocket connection");
-            self.connect();
+            match self.connect() {
+                Err(e) => error!("Reconnecting due to Websocket connection error: {}", e),
+                Ok(_) => { /* Do nothing */ }
+            }
             thread::sleep(Duration::from_secs(1));
         }
     }

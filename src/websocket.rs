@@ -118,7 +118,10 @@ impl WebSocketConnection {
             websocket_url: session.websocket_url.to_owned()
         });
 
-        //socket.write_message(Message::Text("Hello WebSocket".into())).unwrap();
+
+        socket.write_message(Message::Text(session.secret.clone()))
+            .context("Failed to send secret to backend")?;
+
         loop {
             let message = socket.read_message()
                 .context("Error reading from websocket")?;
@@ -132,7 +135,6 @@ impl WebSocketConnection {
                 Message::Text(msg) if msg == "prev" => {
                     debug!("'Previous' received!");
                     self.submit_command(StateChange::EventReceived(Event::Previous));
-
                 }
 
                 msg => {

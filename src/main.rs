@@ -1,20 +1,21 @@
 #[macro_use]
 extern crate log;
-extern crate reqwest;
 extern crate keybd_event;
+extern crate reqwest;
 
 use keybd_event::KeyBondingInstance;
 use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
-use druid::{AppLauncher, Data, FontDescriptor, FontFamily, Lens, LocalizedString, UnitPoint, WidgetExt, WindowDesc};
-use druid::widget::{Align, Controller, Flex, Label, Button};
-use druid::widget::prelude::*;
-use std::thread;
 use dotenv::dotenv;
+use druid::widget::prelude::*;
+use druid::widget::{Align, Button, Controller, Flex, Label};
+use druid::{
+    AppDelegate, AppLauncher, Application, Data, DelegateCtx, FontDescriptor, FontFamily, Lens,
+    LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,
+};
+use std::thread;
 
 mod websocket;
-
-
 
 #[derive(Clone, Data, Lens, Debug)]
 struct AppState {
@@ -23,12 +24,21 @@ struct AppState {
     status: String,
 }
 
-
+struct Delegate {}
+impl AppDelegate<AppState> for Delegate {
+    fn window_removed(
+        &mut self,
+        _id: WindowId,
+        _data: &mut AppState,
+        _env: &Env,
+        _ctx: &mut DelegateCtx,
+    ) {
+        Application::global().quit();
+    }
+}
 
 const VERTICAL_WIDGET_SPACING: f64 = 20.0;
 const WINDOW_TITLE: LocalizedString<AppState> = LocalizedString::new("Next slide please?");
-
-
 
 pub fn main() {
     dotenv().ok();
@@ -47,7 +57,7 @@ pub fn main() {
     };
 
     // Spawn the thread that manages the websocket connection to the backend
-    let launcher = AppLauncher::with_window(main_window);
+    let launcher = AppLauncher::with_window(main_window).delegate(Delegate {});
     let event_sink = launcher.get_external_handle();
     thread::spawn(move || websocket::WebSocketConnection::new(event_sink).connect_loop());
 
@@ -55,15 +65,23 @@ pub fn main() {
     launcher
         .launch(initial_state)
         .expect("Failed to launch application");
-}
 
+    debug!("end of main");
+}
 
 struct AppController;
 
 impl Controller<AppState, Align<AppState>> for AppController {
-    fn event(&mut self, child: &mut Align<AppState>,  ctx: &mut EventCtx,  event: &Event,  data: &mut AppState, env: &Env) {
+    fn event(
+        &mut self,
+        child: &mut Align<AppState>,
+        ctx: &mut EventCtx,
+        event: &Event,
+        data: &mut AppState,
+        env: &Env,
+    ) {
         match event {
-            Event::Command(cmd) if cmd.is(websocket::STATE_CHANGED)=> {
+            Event::Command(cmd) if cmd.is(websocket::STATE_CHANGED) => {
                 match cmd.get_unchecked(websocket::STATE_CHANGED) {
                     websocket::StateChange::Connecting => {
                         data.status = "Connecting...".into();
@@ -71,7 +89,10 @@ impl Controller<AppState, Align<AppState>> for AppController {
                         data.publish_url = None;
                     }
 
-                    websocket::StateChange::Connected { websocket_url, publish_url } => {
+                    websocket::StateChange::Connected {
+                        websocket_url,
+                        publish_url,
+                    } => {
                         data.status = "Connected!".into();
                         data.websocket_url = Some(websocket_url.to_owned());
                         data.publish_url = Some(publish_url.to_owned());
@@ -89,6 +110,7 @@ impl Controller<AppState, Align<AppState>> for AppController {
                 }
             }
 
+            // Forward other events to widget children
             _ => child.event(ctx, event, data, env),
         }
     }
@@ -96,18 +118,15 @@ impl Controller<AppState, Align<AppState>> for AppController {
 
 fn build_root_widget() -> impl Widget<AppState> {
     // a label that will determine its text based on the current app data.
-    let label = Label::new(|_data: &AppState, _env: &Env| {
-        "Next slide please?".to_string()
-    })
+    let label = Label::new(|_data: &AppState, _env: &Env| "Next slide please?".to_string())
         .with_font(FontDescriptor::new(FontFamily::SERIF).with_size(32.0))
         .align_horizontal(UnitPoint::CENTER);
 
-    let status_label = Label::<AppState>::new(|data: &AppState, _env: &Env| {
-        format!("Status: {}", data.status)
-    });
+    let status_label =
+        Label::<AppState>::new(|data: &AppState, _env: &Env| format!("Status: {}", data.status));
 
-    let open_publish_button = Button::<AppState>::new("Open control website")
-        .on_click(|_ctx, data, _env| {
+    let open_publish_button =
+        Button::<AppState>::new("Open control website").on_click(|_ctx, data, _env| {
             if let Some(url) = &data.publish_url {
                 webbrowser::open(&url).expect("Failed to open browser");
             }

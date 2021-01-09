@@ -1,13 +1,12 @@
+use anyhow::{Context, Result};
 use druid::{Selector, Target};
-use std::collections::HashMap;
-use tungstenite::{connect, WebSocket, Message};
 use reqwest::Url;
+use std::collections::HashMap;
+use std::fmt::Debug;
 use std::thread;
 use std::time::Duration;
 use tungstenite::client::AutoStream;
-use anyhow::{Context, Result};
-use std::fmt::Debug;
-
+use tungstenite::{connect, Message, WebSocket};
 
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -18,7 +17,10 @@ pub enum Event {
 #[derive(Clone, Debug)]
 pub enum StateChange {
     Connecting,
-    Connected { websocket_url: String, publish_url: String },
+    Connected {
+        websocket_url: String,
+        publish_url: String,
+    },
     EventReceived(Event),
 }
 
@@ -35,8 +37,7 @@ struct Session {
 pub struct WebSocketConnection {
     event_sink: druid::ExtEventSink,
     client: reqwest::blocking::Client,
-    session: Option<Session>
-
+    session: Option<Session>,
 }
 
 impl WebSocketConnection {
@@ -49,34 +50,40 @@ impl WebSocketConnection {
     }
 
     pub fn submit_command(&self, payload: StateChange) {
-        self.event_sink.submit_command(
-            STATE_CHANGED,
-            payload,
-            Target::Auto
-        ).expect("Failed to send message to main thread");
+        self.event_sink
+            .submit_command(STATE_CHANGED, payload, Target::Auto)
+            .expect("Failed to send message to main thread");
     }
 
     fn register(&self) -> Result<Session, anyhow::Error> {
         if self.session.is_some() {
             let session = self.session.clone().unwrap();
-            debug!("Register called while session already exists: {:?}", &session);
-            return Ok(session)
+            debug!(
+                "Register called while session already exists: {:?}",
+                &session
+            );
+            return Ok(session);
         }
 
-        let res = self.client.post(BACKEND_REGISTER_ENDPOINT)
+        let res = self
+            .client
+            .post(BACKEND_REGISTER_ENDPOINT)
             .header("Content-Type", "application/json")
             .body("{}")
             .send()?;
 
         let content = res.json::<HashMap<String, String>>()?;
-        let publish_url = content.get("publish_url")
+        let publish_url = content
+            .get("publish_url")
             .context("Response did not contain 'publish_url'")?
             .to_owned();
-        let websocket_url = content.get("websocket_url")
+        let websocket_url = content
+            .get("websocket_url")
             .context("Response did not contain 'websocket_url'")?
             .to_owned();
 
-        let secret = content.get("secret")
+        let secret = content
+            .get("secret")
             .context("Response did not contain 'secret'")?
             .to_owned();
 
@@ -86,11 +93,14 @@ impl WebSocketConnection {
         Ok(Session {
             publish_url,
             websocket_url,
-            secret
+            secret,
         })
     }
 
-    fn websocket_connect(&self, websocket_url: &String) -> Result<WebSocket<AutoStream>, anyhow::Error> {
+    fn websocket_connect(
+        &self,
+        websocket_url: &String,
+    ) -> Result<WebSocket<AutoStream>, anyhow::Error> {
         let url = Url::parse(websocket_url)?;
         let (socket, response) = connect(url)?;
 
@@ -107,23 +117,26 @@ impl WebSocketConnection {
     fn connect(&mut self) -> Result<(), anyhow::Error> {
         self.submit_command(StateChange::Connecting);
 
-        let session = self.register()
+        let session = self
+            .register()
             .context("Failed to register new connection")?;
 
-        let mut socket = self.websocket_connect(&session.websocket_url)
+        let mut socket = self
+            .websocket_connect(&session.websocket_url)
             .context("Failed to establish websocket connection")?;
 
         self.submit_command(StateChange::Connected {
             publish_url: session.publish_url.to_owned(),
-            websocket_url: session.websocket_url.to_owned()
+            websocket_url: session.websocket_url.to_owned(),
         });
 
-
-        socket.write_message(Message::Text(session.secret.clone()))
+        socket
+            .write_message(Message::Text(session.secret.clone()))
             .context("Failed to send secret to backend")?;
 
         loop {
-            let message = socket.read_message()
+            let message = socket
+                .read_message()
                 .context("Error reading from websocket")?;
 
             match message {
@@ -137,13 +150,16 @@ impl WebSocketConnection {
                     self.submit_command(StateChange::EventReceived(Event::Previous));
                 }
 
+                Message::Ping(_) => {
+                    trace!("Received ping");
+                }
+
                 msg => {
                     debug!("Received unexpected message: {}", msg)
                 }
             }
         }
     }
-
 
     pub fn connect_loop(&mut self) {
         loop {

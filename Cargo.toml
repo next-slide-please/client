@@ -36,6 +36,7 @@ reqwest = { version = "0.10.10", features = ["blocking", "json"] }
 keybd_event = "0.1.2"
 anyhow = "1.0"
 dotenv = "0.15.0"
+macos-accessibility-client = "0.0"
 #iced = { version = "0.2",  features = ["tokio"] }
 #iced_futures = "0.2"
 #iced_native = "0.2"

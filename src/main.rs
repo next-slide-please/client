@@ -11,7 +11,7 @@ use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
 use dotenv::dotenv;
 use druid::widget::prelude::*;
-use druid::widget::{Align, Button, Controller, Flex, Label};
+use druid::widget::{Align, Button, Controller, Flex, Label, Either};
 use druid::{
     AppDelegate, AppLauncher, Application, Data, DelegateCtx, FontDescriptor, FontFamily, Lens,
     LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,
@@ -25,6 +25,7 @@ struct AppState {
     websocket_url: Option<String>,
     publish_url: Option<String>,
     status: String,
+    has_accessibility_permissions: bool,
 }
 
 struct Delegate {}
@@ -43,6 +44,20 @@ impl AppDelegate<AppState> for Delegate {
 const VERTICAL_WIDGET_SPACING: f64 = 20.0;
 const WINDOW_TITLE: LocalizedString<AppState> = LocalizedString::new("Next slide please?");
 
+#[cfg(target_os = "macos")]
+fn has_accessibility_permissions() -> bool {
+    let trusted = macos_accessibility_client::accessibility::application_is_trusted_with_prompt();
+    if !trusted {
+        warn!("application isn't trusted");
+    }
+    return trusted
+}
+
+#[cfg(not(target_os = "macos"))]
+fn has_accessibility_permissions() -> bool {
+    true
+}
+
 pub fn main() {
     dotenv().ok();
     env_logger::init();
@@ -57,6 +72,7 @@ pub fn main() {
         websocket_url: None,
         publish_url: None,
         status: "Initializing".into(),
+        has_accessibility_permissions: has_accessibility_permissions()
     };
 
     // Spawn the thread that manages the websocket connection to the backend
@@ -74,10 +90,10 @@ pub fn main() {
 
 struct AppController;
 
-impl Controller<AppState, Align<AppState>> for AppController {
+impl<C : Widget<AppState>> Controller<AppState, C> for AppController {
     fn event(
         &mut self,
-        child: &mut Align<AppState>,
+        child: &mut C,
         ctx: &mut EventCtx,
         event: &Event,
         data: &mut AppState,
@@ -119,12 +135,13 @@ impl Controller<AppState, Align<AppState>> for AppController {
     }
 }
 
-fn build_root_widget() -> impl Widget<AppState> {
-    // a label that will determine its text based on the current app data.
-    let label = Label::new(|_data: &AppState, _env: &Env| "Next slide please?".to_string())
+fn heading() -> Align<AppState> {
+    Label::new(|_data: &AppState, _env: &Env| "Next slide please?".to_string())
         .with_font(FontDescriptor::new(FontFamily::SERIF).with_size(32.0))
-        .align_horizontal(UnitPoint::CENTER);
+        .align_horizontal(UnitPoint::CENTER)
+}
 
+fn build_root_widget() -> impl Widget<AppState> {
     let status_label =
         Label::<AppState>::new(|data: &AppState, _env: &Env| format!("Status: {}", data.status));
 
@@ -135,21 +152,25 @@ fn build_root_widget() -> impl Widget<AppState> {
             }
         });
 
-    // let last_action_label = Label::<AppState>::new(|_data: &AppState, _env: &Env| {
-    //    format!("Last action:")
-    // })
-    //     .with_font(FontDescriptor::new(FontFamily::SERIF).with_size(16.0))
-    //     .align_horizontal(UnitPoint::CENTER)
-    //     .on_click(|_ctx, _data, _env| {
-    //
-    //     });
+    let no_accessibility_options = Label::<AppState>::new("E_NOACCESSIBILITY");
 
-    Flex::column()
-        .with_child(label)
+    let yes = Flex::column()
+        .with_child(heading())
         .with_spacer(VERTICAL_WIDGET_SPACING)
         .with_child(status_label)
         .with_spacer(VERTICAL_WIDGET_SPACING)
         .with_child(open_publish_button)
-        .align_vertical(UnitPoint::CENTER)
-        .controller(AppController)
+        .align_vertical(UnitPoint::CENTER);
+
+    let no = Flex::column()
+        .with_child(heading())
+        .with_spacer(VERTICAL_WIDGET_SPACING)
+        .with_child(no_accessibility_options)
+        .align_vertical(UnitPoint::CENTER);
+
+    Either::<AppState>::new(
+        |state, _| state.has_accessibility_permissions,
+        yes,
+        no
+    ).controller(AppController)
 }

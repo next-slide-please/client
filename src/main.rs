@@ -1,3 +1,6 @@
+#![cfg_attr(debug_assertions, allow(dead_code, unused_imports))]
+#![deny(warnings)]
+
 #[macro_use]
 extern crate log;
 extern crate keybd_event;

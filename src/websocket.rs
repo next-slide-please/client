@@ -24,7 +24,7 @@ pub enum StateChange {
     EventReceived(Event),
 }
 
-const BACKEND_REGISTER_ENDPOINT: &str = "http://localhost:8000/register";
+const BACKEND_REGISTER_ENDPOINT: &str = "https://next-slide-please.com/register";
 pub(crate) const STATE_CHANGED: Selector<StateChange> = Selector::new("set-websocket-state");
 
 #[derive(Debug, Clone)]
@@ -140,12 +140,12 @@ impl WebSocketConnection {
                 .context("Error reading from websocket")?;
 
             match message {
-                Message::Text(msg) if msg == "next" => {
+                Message::Text(msg) if msg == "Next" => {
                     debug!("'Next' received!");
                     self.submit_command(StateChange::EventReceived(Event::Next));
                 }
 
-                Message::Text(msg) if msg == "prev" => {
+                Message::Text(msg) if msg == "Previous" => {
                     debug!("'Previous' received!");
                     self.submit_command(StateChange::EventReceived(Event::Previous));
                 }
@@ -171,8 +171,4 @@ impl WebSocketConnection {
             thread::sleep(Duration::from_secs(1));
         }
     }
-
-    // fn websocket_register(event_sink: druid::ExtEventSink) -> Result<(), Box<dyn std::error::Error>> {
-    //     Ok(())
-    // }
 }

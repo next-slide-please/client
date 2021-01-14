@@ -11,7 +11,7 @@ use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
 use dotenv::dotenv;
 use druid::widget::prelude::*;
-use druid::widget::{Align, Button, Controller, Flex, Label, Either};
+use druid::widget::{Align, Button, Controller, Either, Flex, Label};
 use druid::{
     AppDelegate, AppLauncher, Application, Data, DelegateCtx, FontDescriptor, FontFamily, Lens,
     LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,
@@ -50,7 +50,7 @@ fn has_accessibility_permissions() -> bool {
     if !trusted {
         warn!("application isn't trusted");
     }
-    return trusted
+    return trusted;
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -58,7 +58,7 @@ fn has_accessibility_permissions() -> bool {
     true
 }
 
-pub fn main() {
+fn main() {
     dotenv().ok();
     env_logger::init();
     info!("starting up");
@@ -67,20 +67,20 @@ pub fn main() {
         .title(WINDOW_TITLE)
         .window_size((400.0, 400.0));
 
-    // create the initial app state
+    #[cfg(target_os = "macos")]
+    macos_app_nap::prevent();
+
     let initial_state = AppState {
         websocket_url: None,
         publish_url: None,
         status: "Initializing".into(),
-        has_accessibility_permissions: has_accessibility_permissions()
+        has_accessibility_permissions: has_accessibility_permissions(),
     };
 
-    // Spawn the thread that manages the websocket connection to the backend
     let launcher = AppLauncher::with_window(main_window).delegate(Delegate {});
     let event_sink = launcher.get_external_handle();
     thread::spawn(move || websocket::WebSocketConnection::new(event_sink).connect_loop());
 
-    // start the application
     launcher
         .launch(initial_state)
         .expect("Failed to launch application");
@@ -90,7 +90,7 @@ pub fn main() {
 
 struct AppController;
 
-impl<C : Widget<AppState>> Controller<AppState, C> for AppController {
+impl<C: Widget<AppState>> Controller<AppState, C> for AppController {
     fn event(
         &mut self,
         child: &mut C,
@@ -100,6 +100,10 @@ impl<C : Widget<AppState>> Controller<AppState, C> for AppController {
         env: &Env,
     ) {
         match event {
+            Event::WindowConnected => {
+                debug!("Widget WindowConnected");
+            }
+
             Event::Command(cmd) if cmd.is(websocket::STATE_CHANGED) => {
                 match cmd.get_unchecked(websocket::STATE_CHANGED) {
                     websocket::StateChange::Connecting => {
@@ -168,9 +172,6 @@ fn build_root_widget() -> impl Widget<AppState> {
         .with_child(no_accessibility_options)
         .align_vertical(UnitPoint::CENTER);
 
-    Either::<AppState>::new(
-        |state, _| state.has_accessibility_permissions,
-        yes,
-        no
-    ).controller(AppController)
+    Either::<AppState>::new(|state, _| state.has_accessibility_permissions, yes, no)
+        .controller(AppController)
 }

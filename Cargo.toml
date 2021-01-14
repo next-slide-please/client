@@ -26,7 +26,7 @@ deb_depends = []
 osx_frameworks = []
 
 [dependencies]
-druid = { git = "https://github.com/linebender/druid.git" }
+druid = "0.7"
 tungstenite = "0.11.1"
 url = "2.2.0"
 log = "0.4.0"
@@ -37,9 +37,8 @@ keybd_event = "0.1.2"
 anyhow = "1.0"
 dotenv = "0.15.0"
 
-[target.'cfg(macos)'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
 macos-accessibility-client = "0.0"
-#iced = { version = "0.2",  features = ["tokio"] }
-#iced_futures = "0.2"
-#iced_native = "0.2"
-#instant = "0.1.9"
+macos-app-nap = "0.0"
+
+

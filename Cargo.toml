@@ -1,6 +1,6 @@
 [package]
 name = "client"
-version = "1.0.0-alpha.1"
+version = "0.1.0"
 authors = ["lucas.jenss"]
 edition = "2018"
 description = "NextSlidePlease.com GUI client"
@@ -10,7 +10,7 @@ build = "build.rs"
 name = "NextSlidePlease"
 identifier = "com.next-slide-please.client"
 icon = []
-version = "1.0.0-alpha.1"
+version = "0.1.0"
 resources = []
 copyright = "Copyright (c) Jane Doe 2021. Licensed under GPLv3. See LICENSE.md"
 category = "Developer Tool"

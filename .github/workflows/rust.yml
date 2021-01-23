@@ -13,30 +13,30 @@ jobs:
   build:
     strategy:
       matrix:
-        #os: [ubuntu-18.04, macos-latest, windows-latest]
-        os: [macos-latest]
+        os: [ubuntu-18.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install dependencies (linux)
-      if: ${{ runner.os == 'Linux' }}
-      run: sudo apt-get install libssl-dev libudev-dev libgtk-3-dev
-
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: stable
+
     - uses: Swatinem/rust-cache@v1
 
-    - name: Build
-      run: cargo build --verbose --release
-      if: ${{ runner.os != 'macOS' }}
+    - name: "Prepare: Install dependencies (Linux)"
+      if: ${{ runner.os == 'Linux' }}
+      run: sudo apt-get install libssl-dev libudev-dev libgtk-3-dev
 
-    - name: Install `cargo bundle` (macOS)
+    - name: "Prepare: Install `cargo bundle` (macOS)"
       run: cargo install cargo-bundle
       if: ${{ runner.os == 'macOS' }}
+
+    - name: Build (Window / Linux)
+      run: cargo build --verbose --release
+      if: ${{ runner.os != 'macOS' }}
 
     - name: Build app bundle (macOS)
       run: cargo bundle --release
@@ -51,19 +51,19 @@ jobs:
       if: ${{ runner.os == 'macOS' }}
       uses: actions/upload-artifact@v2
       with:
-        name: macOS build
+        name: macOS
         path: target/debug/bundle/osx/NextSlidePlease.zip
 
     - name: Upload build (Windows)
       if: ${{ runner.os == 'Windows' }}
       uses: actions/upload-artifact@v2
       with:
-        name: NextSlidePlease
+        name: Windows
         path: target/release/client.exe
 
-    - name: Upload build (Unix)
-      if: ${{ runner.os != 'Windows' }}
+    - name: Upload build (Linux)
+      if: ${{ runner.os == 'Linux' }}
       uses: actions/upload-artifact@v2
       with:
-        name: NextSlidePlease
+        name: Linux
         path: target/release/client

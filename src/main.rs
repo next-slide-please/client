@@ -11,10 +11,10 @@ use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
 use dotenv::dotenv;
 use druid::widget::prelude::*;
-use druid::widget::{Align, Button, Controller, Either, Flex, Label};
+use druid::widget::{Align, Button, Controller, Either, Flex, Label, RawLabel};
 use druid::{
-    AppDelegate, AppLauncher, Application, Data, DelegateCtx, FontDescriptor, FontFamily, Lens,
-    LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,
+    AppDelegate, AppLauncher, Application, Color, Data, DelegateCtx, FontDescriptor, FontFamily,
+    Lens, LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,
 };
 use std::thread;
 
@@ -65,7 +65,7 @@ fn main() {
 
     let main_window = WindowDesc::new(build_root_widget)
         .title(WINDOW_TITLE)
-        .window_size((400.0, 400.0));
+        .window_size((400.0, 200.0));
 
     #[cfg(target_os = "macos")]
     macos_app_nap::prevent();
@@ -149,6 +149,15 @@ fn build_root_widget() -> impl Widget<AppState> {
     let status_label =
         Label::<AppState>::new(|data: &AppState, _env: &Env| format!("Status: {}", data.status));
 
+    let version_label = Label::<AppState>::new(|_data: &AppState, _env: &Env| {
+        format!(
+            "v{}+{}",
+            env!("CARGO_PKG_VERSION"),
+            env!("VERGEN_SHA_SHORT")
+        )
+    })
+    .with_text_color(Color::WHITE.with_alpha(0.5));
+
     let open_publish_button =
         Button::<AppState>::new("Open control website").on_click(|_ctx, data, _env| {
             if let Some(url) = &data.publish_url {
@@ -158,13 +167,19 @@ fn build_root_widget() -> impl Widget<AppState> {
 
     let no_accessibility_options = Label::<AppState>::new("E_NOACCESSIBILITY");
 
-    let yes = Flex::column()
+    let main_column = Flex::column()
         .with_child(heading())
         .with_spacer(VERTICAL_WIDGET_SPACING)
         .with_child(status_label)
         .with_spacer(VERTICAL_WIDGET_SPACING)
         .with_child(open_publish_button)
         .align_vertical(UnitPoint::CENTER);
+
+    let version_row = Flex::row().with_flex_spacer(1.0).with_child(version_label);
+
+    let yes = Flex::column()
+        .with_flex_child(main_column, 1.0)
+        .with_child(version_row);
 
     let no = Flex::column()
         .with_child(heading())

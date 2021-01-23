@@ -3,26 +3,19 @@ name = "client"
 version = "1.0.0-alpha.1"
 authors = ["lucas.jenss"]
 edition = "2018"
-description = "Lorem Ipsum"
+description = "NextSlidePlease.com GUI client"
 build = "build.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.bundle]
 name = "NextSlidePlease"
 identifier = "com.next-slide-please.client"
 icon = []
-version = "0.0.1"
+version = "1.0.0-alpha.1"
 resources = []
-copyright = "Copyright (c) Jane Doe 2016. All rights reserved."
-category = "Developer Tool"
-short_description = "An example application."
-long_description = """
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua.  Ut
-enim ad minim veniam, quis nostrud exercitation ullamco laboris
-nisi ut aliquip ex ea commodo consequat.
-"""
+copyright = "Copyright (c) Jane Doe 2021. Licensed under GPLv3. See LICENSE.md"
+category = ""
+short_description = "NextSlidePlease.com GUI client"
+long_description = """"""
 deb_depends = []
 osx_frameworks = []
 
@@ -44,5 +37,3 @@ vergen = "3"
 [target.'cfg(target_os = "macos")'.dependencies]
 macos-accessibility-client = "0.0"
 macos-app-nap = "0.0"
-
-

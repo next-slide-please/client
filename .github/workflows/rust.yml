@@ -28,7 +28,7 @@ jobs:
 
     - name: "Prepare: Install dependencies (Linux)"
       if: ${{ runner.os == 'Linux' }}
-      run: sudo apt-get install libssl-dev libudev-dev libgtk-3-dev
+      run: sudo apt-get update && sudo apt-get install libssl-dev libudev-dev libgtk-3-dev
 
     - name: "Prepare: Install `cargo bundle` (macOS)"
       run: cargo install cargo-bundle

@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         #os: [ubuntu-18.04, macos-latest, windows-latest]
-        os: [windows-latest]
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -33,16 +33,27 @@ jobs:
     - name: Build
       run: cargo build --verbose --release
 
+    - name: Build app bundle for macOS
+      run: cargo bundle
+      if: ${{ runner.os == 'macOS' }}
+
+    - name: Upload build (Windows)
+      if: ${{ runner.os == 'macOS' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: NextSlidePlease
+        path: target/debug/bundle/osx/
+
     - name: Upload build (Windows)
       if: ${{ runner.os == 'Windows' }}
       uses: actions/upload-artifact@v2
       with:
-        name: next-slide-please
+        name: NextSlidePlease
         path: target/release/client.exe
 
     - name: Upload build (Unix)
       if: ${{ runner.os != 'Windows' }}
       uses: actions/upload-artifact@v2
       with:
-        name: next-slide-please
+        name: NextSlidePlease
         path: target/release/client

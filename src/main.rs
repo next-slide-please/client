@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#![cfg_attr(debug_assertions, allow(dead_code, unused_imports))]
 #![deny(warnings)]
 
 #[macro_use]
@@ -27,7 +26,7 @@ use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
 use dotenv::dotenv;
 use druid::widget::prelude::*;
-use druid::widget::{Align, Button, Controller, Either, Flex, Label, RawLabel};
+use druid::widget::{Align, Button, Controller, Either, Flex, Label};
 use druid::{
     AppDelegate, AppLauncher, Application, Color, Data, DelegateCtx, FontDescriptor, FontFamily,
     Lens, LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,

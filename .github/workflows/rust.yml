@@ -32,21 +32,27 @@ jobs:
 
     - name: Build
       run: cargo build --verbose --release
+      if: ${{ runner.os != 'macOS' }}
 
-    - name: Install `cargo bundle`
+    - name: Install `cargo bundle` (macOS)
       run: cargo install cargo-bundle
       if: ${{ runner.os == 'macOS' }}
 
-    - name: Build app bundle for macOS
-      run: cargo bundle
+    - name: Build app bundle (macOS)
+      run: cargo bundle --release
       if: ${{ runner.os == 'macOS' }}
 
-    - name: Upload build (Windows)
+    - name: Zip app bundle (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      working-directory: target/debug/bundle/osx/
+      run: zip -r NextSlidePlease.zip .
+
+    - name: Upload build (macOS)
       if: ${{ runner.os == 'macOS' }}
       uses: actions/upload-artifact@v2
       with:
-        name: NextSlidePlease
-        path: target/debug/bundle/osx/
+        name: macOS build
+        path: target/debug/bundle/osx/NextSlidePlease.zip
 
     - name: Upload build (Windows)
       if: ${{ runner.os == 'Windows' }}

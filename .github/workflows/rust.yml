@@ -33,6 +33,10 @@ jobs:
     - name: Build
       run: cargo build --verbose --release
 
+    - name: Install `cargo bundle`
+      run: cargo install cargo-bundle
+      if: ${{ runner.os == 'macOS' }}
+
     - name: Build app bundle for macOS
       run: cargo bundle
       if: ${{ runner.os == 'macOS' }}

@@ -57,16 +57,11 @@ jobs:
       shell: bash
       run: mv ${{ matrix.artifact }} ${{ matrix.desired_name }}
 
-    - uses: papeloto/action-zip@7a2f79e6d5dcf17f78109dc6eb81e74526069175
-      with:
-        files: ${{ matrix.desired_name }}
-        dest: ${{ matrix.zip_name }}
-
     - name: Upload build
       uses: actions/upload-artifact@v2
       with:
         name: ${{ runner.os }}
-        path: ${{ matrix.zip_name }}
+        path: ${{ matrix.desired_name }}
 
   release:
     name: Create Github Release

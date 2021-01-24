@@ -14,14 +14,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-18.04
-            artifact: target/release/client
-            desired_name: ./NextSlidePlease
-            zip_name: Linux.zip
-          - os: windows-latest
-            artifact: target/release/client.exe
-            desired_name: ./NextSlidePlease.exe
-            zip_name: Windows.zip
+#          - os: ubuntu-18.04
+#            artifact: target/release/client
+#            desired_name: ./NextSlidePlease
+#            zip_name: Linux.zip
+#          - os: windows-latest
+#            artifact: target/release/client.exe
+#            desired_name: ./NextSlidePlease.exe
+#            zip_name: Windows.zip
           - os: macos-latest
             artifact: target/debug/bundle/osx/NextSlidePlease.app
             desired_name: ./NextSlidePlease.app

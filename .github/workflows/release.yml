@@ -10,10 +10,22 @@ env:
 
 jobs:
   build:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          - os: ubuntu-18.04
+            artifact: target/release/client
+            desired_name: ./NextSlidePlease
+            zip_name: Linux.zip
+          - os: windows-latest
+            artifact: target/release/client.exe
+            desired_name: ./NextSlidePlease.exe
+            zip_name: Windows.zip
+          - os: macos-latest
+            artifact: target/debug/bundle/osx/NextSlidePlease.app
+            desired_name: ./NextSlidePlease.app
+            zip_name: macOS.zip
 
     steps:
     - uses: actions/checkout@v2
@@ -41,42 +53,16 @@ jobs:
       run: cargo bundle --release
       if: ${{ runner.os == 'macOS' }}
 
-    - name: Zip app bundle (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      working-directory: target/debug/bundle/osx/
-      run: zip -r macOS.zip .
+    - uses: papeloto/action-zip@7a2f79e6d5dcf17f78109dc6eb81e74526069175
+      with:
+        files: ${{ matrix.desired_name }}
+        dest: ${{ matrix.zip_name }}
 
-    - name: Zip application (Windows)
-      shell: bash
-      if: ${{ runner.os == 'Windows' }}
-      working-directory: target/release/
-      run: mv client.exe NextSlidePlease.exe && tar.exe -a -c -f Windows.zip NextSlidePlease.exe
-
-    - name: Zip application
-      if: ${{ runner.os == 'Linux' }}
-      working-directory:  target/release/
-      run: mv client NextSlidePlease && zip -r Linux.zip NextSlidePlease
-
-    - name: Upload build (macOS)
-      if: ${{ runner.os == 'macOS' }}
+    - name: Upload build
       uses: actions/upload-artifact@v2
       with:
-        name: macOS
-        path: target/debug/bundle/osx/macOS.zip
-
-    - name: Upload build (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: Windows
-        path: target/release/Windows.zip
-
-    - name: Upload build (Linux)
-      if: ${{ runner.os == 'Linux' }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: Linux
-        path: target/release/Linux.zip
+        name: ${{ runner.os }}
+        path: ${{ matrix.zip_name }}
 
   release:
     name: Create Github Release

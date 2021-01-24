@@ -53,6 +53,10 @@ jobs:
       run: cargo bundle --release
       if: ${{ runner.os == 'macOS' }}
 
+    - name: Rename build artifact
+      shell: bash
+      run: mv ${{ matrix.artifact }} ${{ matrix.desired_name }}
+
     - uses: papeloto/action-zip@7a2f79e6d5dcf17f78109dc6eb81e74526069175
       with:
         files: ${{ matrix.desired_name }}

@@ -26,7 +26,7 @@ use keybd_event::KeyboardKey::{KeyLEFT, KeyRIGHT};
 
 use dotenv::dotenv;
 use druid::widget::prelude::*;
-use druid::widget::{Align, Button, Controller, Either, Flex, Label};
+use druid::widget::{Align, Button, Controller, Either, Flex, Label, LineBreaking};
 use druid::{
     AppDelegate, AppLauncher, Application, Color, Data, DelegateCtx, FontDescriptor, FontFamily,
     Lens, LocalizedString, UnitPoint, WidgetExt, WindowDesc, WindowId,
@@ -180,9 +180,11 @@ fn build_root_widget() -> impl Widget<AppState> {
             }
         });
 
-    let no_accessibility_options = Label::<AppState>::new("E_NOACCESSIBILITY");
+    let no_accessibility_options =
+        Label::<AppState>::new("Please grant the application the ability to control they keyboard, so that it can advance the slides when your co-presenters press the Previous/Next button.\n\nRestart the application afterwards.")
+            .with_line_break_mode(LineBreaking::WordWrap);
 
-    let main_column = Flex::column()
+    let yes = Flex::column()
         .with_child(heading())
         .with_spacer(VERTICAL_WIDGET_SPACING)
         .with_child(status_label)
@@ -192,16 +194,24 @@ fn build_root_widget() -> impl Widget<AppState> {
 
     let version_row = Flex::row().with_flex_spacer(1.0).with_child(version_label);
 
-    let yes = Flex::column()
-        .with_flex_child(main_column, 1.0)
-        .with_child(version_row);
-
     let no = Flex::column()
         .with_child(heading())
         .with_spacer(VERTICAL_WIDGET_SPACING)
         .with_child(no_accessibility_options)
-        .align_vertical(UnitPoint::CENTER);
+        .align_vertical(UnitPoint::CENTER)
+        .padding(10.0);
 
-    Either::<AppState>::new(|state, _| state.has_accessibility_permissions, yes, no)
-        .controller(AppController)
+    let yes_no = Either::<AppState>::new(|state, _| state.has_accessibility_permissions, yes, no)
+        .controller(AppController);
+
+    Flex::column()
+        .with_flex_child(yes_no, 1.0)
+        .with_child(version_row)
+
+
+
+
+
+
+
 }
